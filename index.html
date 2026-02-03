@@ -1,0 +1,40 @@
+const { TelegramClient } = require("telegram");
+const { StringSession } = require("telegram/sessions");
+const input = require("input"); 
+const express = require("express");
+require("dotenv").config();
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Используем переменные окружения для безопасности
+const apiId = parseInt(process.env.API_ID);
+const apiHash = process.env.API_HASH;
+const stringSession = new StringSession(""); // Пустая сессия
+
+async function runTelegram() {
+  const client = new TelegramClient(stringSession, apiId, apiHash, {
+    connectionRetries: 5,
+  });
+
+  await client.start({
+    phoneNumber: async () => await input.text("Введите номер телефона: "),
+    password: async () => await input.text("Введите пароль (если есть): "),
+    phoneCode: async () => await input.text("Введите код из Telegram: "),
+    onError: (err) => console.log(err),
+  });
+
+  console.log("Вы успешно вошли!");
+  console.log("Твоя сессия (сохрани её!):", client.session.save());
+  
+  return client;
+}
+
+app.get("/", (req, res) => {
+  res.send("Сервер Telegram клиента запущен!");
+});
+
+app.listen(port, () => {
+  console.log(`Сервер запущен на порту ${port}`);
+  runTelegram();
+});
